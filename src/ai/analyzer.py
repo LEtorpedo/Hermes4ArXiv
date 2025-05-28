@@ -7,27 +7,25 @@ DeepSeek AI分析器 - 简洁版本
 import asyncio
 import logging
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List # Added List for type hinting
 import arxiv
 
 from .prompts import PromptManager
+from .base_analyzer import BaseAnalyzer # Import BaseAnalyzer
 
 logger = logging.getLogger(__name__)
 
 
-class DeepSeekAnalyzer:
+class DeepSeekAnalyzer(BaseAnalyzer): # Inherit from BaseAnalyzer
     """DeepSeek AI分析器 - 稳定可靠的论文分析"""
     
     def __init__(self, api_key: str, model: str = "deepseek-chat", timeout: int = 60, retry_times: int = 3, delay: int = 2):
-        self.api_key = api_key
-        self.model = model
-        self.base_url = "https://api.deepseek.com/v1"
-        self.timeout = timeout
-        self.retry_times = retry_times
-        self.delay = delay
+        super().__init__(api_key, model, timeout, retry_times, delay) # Call super().__init__
+        self.base_url = "https://api.deepseek.com/v1" # Retain DeepSeek specific base_url
         
+        # Keep DeepSeek specific API key validation for now
         if not api_key or len(api_key) < 10:
-            raise ValueError("DeepSeek API密钥无效")
+            raise ValueError("DeepSeek API密钥无效. Key must be at least 10 characters long.")
     
     def analyze_paper(self, paper: arxiv.Result, analysis_type: str = "comprehensive") -> Dict[str, Any]:
         """同步分析论文"""
@@ -66,7 +64,7 @@ class DeepSeekAnalyzer:
                 
                 return {
                     'analysis': analysis,
-                    'provider': 'deepseek',
+                    'provider': 'deepseek', # Ensure provider is 'deepseek'
                     'model': self.model,
                     'timestamp': time.time(),
                     'html_analysis': PromptManager.format_analysis_for_html(analysis)
@@ -88,27 +86,29 @@ class DeepSeekAnalyzer:
                 if attempt == self.retry_times - 1:
                     raise e
 
-    def analyze_papers_batch(self, papers: list, batch_size: int = 4) -> Dict[str, Any]:
+    def analyze_papers_batch(self, papers: List[arxiv.Result], batch_size: int = 4) -> Dict[str, Any]: # Updated type hint for papers
         """
         批量比较分析论文
         
         Args:
-            papers: 论文列表
+            papers: 论文列表 (List[arxiv.Result])
             batch_size: 批次大小，默认4篇
             
         Returns:
-            批量分析结果字典
+            批量分析结果字典 or None if fallback
         """
         import openai
         
-        if len(papers) < 2:
-            # 如果论文数量不足，回退到单独分析
-            logger.warning("论文数量不足，回退到单独分析模式")
-            return None
+        if not papers or len(papers) < 2: # Check if papers list is empty or too short
+            logger.warning("论文数量不足 (少于2篇)，无法进行批量比较分析。将跳过批量分析。")
+            return None # Return None as per expected behavior for failed/skipped batch analysis
         
         # 准备论文信息
         papers_info = []
-        for paper in papers[:batch_size]:  # 限制批次大小
+        # Ensure we only process up to batch_size papers from the input list
+        actual_batch_papers = papers[:batch_size] 
+
+        for paper in actual_batch_papers:
             # 提取作者信息
             authors_str = '未知'
             if hasattr(paper, 'authors') and paper.authors:
@@ -128,24 +128,34 @@ class DeepSeekAnalyzer:
             published_date = '未知'
             if hasattr(paper, 'published') and paper.published:
                 try:
-                    published_date = paper.published.strftime('%Y年%m月%d日')
-                except:
-                    published_date = str(paper.published)
+                    # Ensure paper.published is a datetime object before strftime
+                    if hasattr(paper.published, 'strftime'):
+                        published_date = paper.published.strftime('%Y年%m月%d日')
+                    else:
+                        published_date = str(paper.published) # Fallback if not a datetime object
+                except Exception as ex_date:
+                    logger.warning(f"Error formatting published date for {paper.entry_id}: {ex_date}")
+                    published_date = str(paper.published) # Fallback to string representation
             
             # 处理摘要长度
-            summary = paper.summary.strip()
+            summary = paper.summary.strip() if paper.summary else "摘要不可用"
             if len(summary) > 800:  # 批量分析时摘要更短
                 summary = summary[:800] + "..."
             
             papers_info.append({
-                'title': paper.title,
+                'title': paper.title if paper.title else "标题不可用",
                 'authors': authors_str,
-                'categories': ', '.join(paper.categories),
+                'categories': ', '.join(paper.categories) if paper.categories else "分类不可用",
                 'published': published_date,
                 'summary': summary,
                 'url': paper.entry_id
             })
         
+        # If after processing, papers_info is still too short (e.g. due to filtering or small input)
+        if len(papers_info) < 2:
+            logger.warning(f"有效论文数量不足 ({len(papers_info)}篇) 以进行批量比较，将跳过。")
+            return None
+
         # 使用OpenAI兼容的API
         client = openai.OpenAI(
             api_key=self.api_key,
@@ -180,7 +190,7 @@ class DeepSeekAnalyzer:
                 return {
                     'batch_analysis': batch_analysis,
                     'papers_count': len(papers_info),
-                    'provider': 'deepseek',
+                    'provider': 'deepseek', # Ensure provider is 'deepseek'
                     'model': self.model,
                     'timestamp': time.time(),
                     'analysis_type': 'batch_comparison'
@@ -205,7 +215,7 @@ class DeepSeekAnalyzer:
     def get_info(self) -> Dict[str, str]:
         """获取分析器信息"""
         return {
-            "name": "DeepSeek",
-            "model": self.model,
+            "provider_name": "DeepSeek", # Changed key to match BaseAnalyzer expectation
+            "model_name": self.model,    # Changed key to match BaseAnalyzer expectation
             "description": "DeepSeek - 高性价比稳定AI模型"
-        } 
+        }

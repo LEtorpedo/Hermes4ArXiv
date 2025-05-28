@@ -9,7 +9,8 @@ from typing import Dict, List, Any, Tuple
 import re
 import arxiv
 
-from .analyzer import DeepSeekAnalyzer
+# from .analyzer import DeepSeekAnalyzer # No longer specific to DeepSeek
+from .base_analyzer import BaseAnalyzer # Import BaseAnalyzer for type hinting
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class BatchAnalysisCoordinator:
     """批量分析协调器"""
     
-    def __init__(self, analyzer: DeepSeekAnalyzer, batch_size: int = 4):
+    def __init__(self, analyzer: BaseAnalyzer, batch_size: int = 4): # Changed type hint
         self.analyzer = analyzer
         self.batch_size = batch_size
     
@@ -74,10 +75,11 @@ class BatchAnalysisCoordinator:
             results = []
             for i, paper in enumerate(batch_papers):
                 if i < len(individual_analyses):
+                    analyzer_info = self.analyzer.get_info()
                     analysis_result = {
                         'analysis': individual_analyses[i]['analysis'],
-                        'provider': 'deepseek',
-                        'model': self.analyzer.model,
+                        'provider': analyzer_info.get('provider_name', 'unknown_provider'),
+                        'model': analyzer_info.get('model_name', self.analyzer.model), # Fallback to self.analyzer.model if new key not present
                         'timestamp': batch_analysis['timestamp'],
                         'batch_analysis': True,
                         'batch_size': len(batch_papers),

@@ -5,30 +5,43 @@
 
 1. **Fork 本仓库** 到您的GitHub账号
 
-2. **设置必需密钥**：进入 Settings → Secrets and variables → Actions，添加：
-   ```
-   DEEPSEEK_API_KEY=sk-your-api-key        # 必需：DeepSeek API密钥
-   SMTP_USERNAME=your-email@gmail.com      # 必需：发送邮箱
-   SMTP_PASSWORD=your-app-password         # 必需：邮箱授权码
-   EMAIL_TO=recipient@gmail.com            # 必需：接收邮箱(支持多人，用","隔开)
-   ```
+2. **设置环境变量和密钥**：进入仓库的 Settings → Secrets and variables → Actions，添加以下配置：
 
-3. **启用Actions**：GitHub Actions 将每日北京时间8:00自动运行
+   **核心配置:**
+   ```
+   AI_PROVIDER=deepseek                       # AI服务提供商: "deepseek", "openai", "gemini" (默认为 "deepseek")
+   # 根据选择的 AI_PROVIDER，配置对应的 API Key:
+   DEEPSEEK_API_KEY=YOUR_DEEPSEEK_API_KEY     # (若使用 DeepSeek) 您的 DeepSeek API 密钥
+   OPENAI_API_KEY=YOUR_OPENAI_API_KEY         # (若使用 OpenAI) 您的 OpenAI API 密钥
+   GEMINI_API_KEY=YOUR_GEMINI_API_KEY         # (若使用 Gemini) 您的 Gemini API 密钥
+
+   EMAIL_TO=recipient@example.com             # 必需：接收报告的邮箱 (支持多个, 用 "," 分隔)
+   SMTP_USERNAME=your-email@example.com       # 必需：发送报告的邮箱地址
+   SMTP_PASSWORD=your-email-app-password      # 必需：发送邮箱的授权码 (例如Gmail的App Password)
+   ```
+   > **注意**: 您只需要配置所选 `AI_PROVIDER` 对应的 `API_KEY`。
+
+3. **启用Actions**：GitHub Actions 将每日北京时间8:00自动运行。
 
 就是这么简单！系统将每日自动分析最新的AI/ML/NLP论文并发送邮件报告。
 
-📖 **需要自定义配置？** 参见：[高级配置指南](ADVANCED_CONFIG.md)  
-🔑 **获取API密钥？** 参见：[DeepSeek配置指南](docs/setup/DEEPSEEK_SETUP_GUIDE.md)  
-📧 **邮箱设置问题？** 参见：[Gmail设置指南](docs/setup/GMAIL_SETUP_GUIDE.md)
+📖 **需要自定义配置？** 运行 `python scripts/configure_analysis.py` 生成推荐配置，或手动参考 [高级配置指南](ADVANCED_CONFIG.md)。  
+🔑 **获取API密钥？** 参考 [高级配置指南](ADVANCED_CONFIG.md) 中各AI服务商的说明。  
+📧 **邮箱设置问题？** 参见：[Gmail设置指南](docs/setup/GMAIL_SETUP_GUIDE.md)。
 
-## 🔧 主要功能
+## 🌟 主要功能
 
-- **自动论文获取**：每日从 ArXiv 获取AI/ML/NLP领域最新论文
-- **AI 智能分析**：使用 DeepSeek 对论文进行深度分析和质量评估
+- **自动论文获取**：每日从 ArXiv 获取用户指定领域的最新论文。
+- **多AI模型支持**：可选择 DeepSeek, OpenAI (GPT系列), Google Gemini进行论文分析。
+- **智能分析**：对论文进行多维度分析和质量评估。
+- **邮件自动推送**：发送包含分析结果的精美HTML邮件报告。
+- **GitHub Actions部署**：完全基于云端，无需本地环境。
+- **高度可配置**：支持自定义论文领域、数量、分析深度、AI模型等。
+- **AI 智能分析**：使用 DeepSeek 对论文进行深度分析和质量评估 (注: 分析维度和评分标准可能因选用AI模型而异)
 - **邮件自动推送**：发送包含分析结果的精美HTML邮件报告
 - **GitHub Actions部署**：完全基于云端，无需本地环境
 
-## 📊 AI 分析维度
+## 📊 AI 分析维度 (以DeepSeek为例, 其他模型可能有所不同)
 
 - **质量评分**：5星评分系统（严格学术标准，避免虚高评分）
 - **创新程度**：突破性/渐进性/跟随性
@@ -71,8 +84,8 @@
 - 验证接收邮箱地址正确
 
 **Actions运行失败？**
-- 检查API密钥是否正确设置
-- 确认DeepSeek账户有足够余额
+- 检查API密钥是否正确设置 (对应您选择的 `AI_PROVIDER`)
+- 确认AI服务商账户有足够余额/额度
 - 查看Actions运行日志了解具体错误
 
 **想要更多自定义？**
@@ -82,8 +95,7 @@
 
 ## 📚 详细文档
 
-- [高级配置指南](ADVANCED_CONFIG.md) - 自定义分析类型、论文数量等
-- [DeepSeek API配置](docs/setup/DEEPSEEK_SETUP_GUIDE.md) - API密钥申请和配置
+- [高级配置指南](ADVANCED_CONFIG.md) - 自定义AI提供商、模型、分析类型、论文数量等
 - [Gmail邮箱设置](docs/setup/GMAIL_SETUP_GUIDE.md) - 邮箱授权码设置
 
 ## 🤝 贡献期待

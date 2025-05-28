@@ -12,11 +12,24 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from data.arxiv_client import ArxivClient
-from config import Config
+# from config import Config # Config is already imported via src.config
+from src.config import Config # Ensure Config is imported if not already
+from src.ai.factory import get_analyzer # Import the factory
 from output.email_sender import EmailSender
 from output.formatter import OutputFormatter
-from ai.parallel import ParallelPaperAnalyzer
+from ai.parallel import ParallelPaperAnalyzer # This seems to be an old path or structure
+# from src.ai.parallel import ParallelPaperAnalyzer # Corrected path if parallel is under src.ai
+# Based on current file structure, ai.parallel seems to be sibling to main.py's dir if main is in src
+# Let's assume ai.parallel is found as `from ai.parallel import ParallelPaperAnalyzer` if main.py is in `src`
+# and `ai` is also in `src`. If `ai` is a sub-package of `src`, then `from .ai.parallel` or `from src.ai.parallel`
+# The provided file structure has main.py in src/ and ai/ in src/ai/.
+# The original code had `from ai.parallel import ParallelPaperAnalyzer` which implies `ai` is in python path
+# or `src` is added to path and `ai` is a top-level dir in `src`.
+# Given `sys.path.insert(0, str(Path(__file__).parent))` and main.py in `src/`,
+# and `ai` is `src/ai/`, then `from ai.parallel...` should work.
+
 from src.utils.logger import logger
+# Removed: from ai.analyzer import DeepSeekAnalyzer
 
 
 class ArxivPaperTracker:
@@ -43,15 +56,10 @@ class ArxivPaperTracker:
     def _initialize_components(self):
         """初始化各个组件"""
         try:
-            # 初始化DeepSeek分析器
-            from ai.analyzer import DeepSeekAnalyzer
-            self.ai_analyzer = DeepSeekAnalyzer(
-                api_key=self.config.DEEPSEEK_API_KEY,
-                model=self.config.DEEPSEEK_MODEL,
-                timeout=self.config.API_TIMEOUT,
-                retry_times=self.config.API_RETRY_TIMES,
-                delay=self.config.API_DELAY
-            )
+            # 初始化AI分析器 (using the factory)
+            logger.info(f"Initializing AI Analyzer using provider: {self.config.AI_PROVIDER}")
+            self.ai_analyzer = get_analyzer(self.config)
+            logger.info(f"Successfully initialized AI Analyzer: {type(self.ai_analyzer).__name__}")
             
             # 初始化ArXiv客户端
             self.arxiv_client = ArxivClient(

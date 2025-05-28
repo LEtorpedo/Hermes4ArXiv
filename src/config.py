@@ -32,9 +32,20 @@ class Config:
 
     def __init__(self):
         """初始化配置，从环境变量读取"""
+        # AI Provider Configuration
+        self.AI_PROVIDER = os.getenv("AI_PROVIDER", "deepseek").lower()
+
         # DeepSeek AI配置
         self.DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
         self.DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+        # OpenAI AI配置
+        self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        self.OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
+        # Gemini AI配置
+        self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+        self.GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-pro")
         
         # API调用配置
         self.API_RETRY_TIMES = self._safe_int(os.getenv("API_RETRY_TIMES"), "3")
@@ -80,9 +91,24 @@ class Config:
 
     def validate(self) -> bool:
         """验证配置是否完整"""
-        # 检查DeepSeek API密钥
-        if not self.DEEPSEEK_API_KEY:
-            print("❌ 未配置DEEPSEEK_API_KEY，无法进行论文分析")
+        # 检查AI Provider特定配置
+        if self.AI_PROVIDER == "deepseek":
+            if not self.DEEPSEEK_API_KEY:
+                print("❌ AI_PROVIDER设置为deepseek，但未配置DEEPSEEK_API_KEY，无法进行论文分析")
+                return False
+            print(f"✅ 配置验证通过！使用DeepSeek模型: {self.DEEPSEEK_MODEL}")
+        elif self.AI_PROVIDER == "openai":
+            if not self.OPENAI_API_KEY:
+                print("❌ AI_PROVIDER设置为openai，但未配置OPENAI_API_KEY，无法进行论文分析")
+                return False
+            print(f"✅ 配置验证通过！使用OpenAI模型: {self.OPENAI_MODEL}")
+        elif self.AI_PROVIDER == "gemini":
+            if not self.GEMINI_API_KEY:
+                print("❌ AI_PROVIDER设置为gemini，但未配置GEMINI_API_KEY，无法进行论文分析")
+                return False
+            print(f"✅ 配置验证通过！使用Gemini模型: {self.GEMINI_MODEL}")
+        else:
+            print(f"❌ 不支持的AI_PROVIDER: {self.AI_PROVIDER}。请选择 'deepseek', 'openai', 或 'gemini'")
             return False
         
         # 检查邮件配置
@@ -103,7 +129,7 @@ class Config:
             print("❌ 缺少收件人邮箱配置 (EMAIL_TO)")
             return False
 
-        print(f"✅ 配置验证通过！使用DeepSeek模型: {self.DEEPSEEK_MODEL}")
+        # 移除原先DeepSeek特定的成功消息，因为它现在由AI_PROVIDER逻辑处理
         return True
 
     def create_directories(self):

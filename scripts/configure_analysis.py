@@ -41,8 +41,15 @@ def main():
     
     field = input("请选择 (a/b/c): ").lower().strip()
     
+    # 问题4：AI服务提供商
+    print("\n4. 选择您希望使用的AI服务提供商：")
+    print("   a) DeepSeek (默认, 高性价比)")
+    print("   b) OpenAI (GPT系列模型)")
+    print("   c) Gemini (Google系列模型)")
+    ai_provider_choice = input("请选择 (a/b/c): ").lower().strip()
+
     # 生成推荐配置
-    config = generate_simple_config(paper_count, detail_need, field)
+    config = generate_simple_config(paper_count, detail_need, field, ai_provider_choice)
     
     print("\n" + "="*60)
     print("🎯 推荐的GitHub Secrets配置：")
@@ -53,21 +60,42 @@ def main():
     print()
     
     # 必需配置
-    print("🔑 必需配置（必须添加）：")
-    print("   DEEPSEEK_API_KEY=sk-your-deepseek-api-key")
+    print("🔑 必需的核心API密钥 (根据您选择的AI服务提供商配置一个)：")
+    print("   DEEPSEEK_API_KEY=YOUR_DEEPSEEK_API_KEY (如果选择DeepSeek)")
+    print("   OPENAI_API_KEY=YOUR_OPENAI_API_KEY (如果选择OpenAI)")
+    print("   GEMINI_API_KEY=YOUR_GEMINI_API_KEY (如果选择Gemini)")
+    print("\n📧 必需的邮件配置 (用于接收报告):")
     print("   SMTP_USERNAME=your-email@gmail.com") 
-    print("   SMTP_PASSWORD=your-app-password")
+    print("   SMTP_PASSWORD=your-app-password (若是Gmail，请使用App Password)")
     print("   EMAIL_TO=recipient@gmail.com")
     
     # 可选优化配置
-    print(f"\n⚙️ 可选优化配置：")
+    print(f"\n⚙️ 可选优化配置 (根据您的需求调整):")
+    # AI_PROVIDER will be part of the config dict now
     for key, value in config.items():
-        print(f"   {key}={value}")
+        if key == "AI_PROVIDER": # Already handled by being in config
+             print(f"   {key}={value}")
     
+    # Print other general optional configs
+    # Avoid printing AI_PROVIDER again if it's already looped through
+    general_optional_config = {k: v for k, v in config.items() if k != "AI_PROVIDER"}
+    for key, value in general_optional_config.items():
+        print(f"   {key}={value}")
+
+    # Provider-specific model selection
+    chosen_provider = config.get("AI_PROVIDER", "deepseek")
+    if chosen_provider == "openai":
+        print(f"   OPENAI_MODEL=gpt-3.5-turbo  (若使用OpenAI，可更改模型)")
+    elif chosen_provider == "gemini":
+        print(f"   GEMINI_MODEL=gemini-pro (若使用Gemini，可更改模型)")
+    # DEEPSEEK_MODEL is useful regardless of choice, as a reference or if user switches back
+    print(f"   DEEPSEEK_MODEL=deepseek-chat (若使用DeepSeek，可更改模型)")
+
     print(f"\n💡 配置说明：")
+    print(f"   • AI服务商：{config.get('AI_PROVIDER', 'deepseek').capitalize()}")
     print(f"   • 分析类型：{get_analysis_description(config['ANALYSIS_TYPE'])}")
     print(f"   • 研究领域：{get_field_description(config['CATEGORIES'])}")
-    print(f"   • 预估成本：{estimate_cost(config)}")
+    print(f"   • 预估成本：{estimate_cost(config)} (注意: 当前成本估算主要基于DeepSeek模型)")
     
     print(f"\n📝 部署步骤：")
     print("   1. Fork 本仓库到您的GitHub账号")
@@ -80,11 +108,19 @@ def main():
         generate_reference_file(config)
         print("✅ 参考文件已生成：github_secrets_reference.md")
 
-def generate_simple_config(paper_count, detail_need, field):
+def generate_simple_config(paper_count, detail_need, field, ai_provider_choice):
     """生成简化配置"""
     
     config = {}
-    
+
+    # AI Provider
+    if ai_provider_choice == 'b':
+        config["AI_PROVIDER"] = "openai"
+    elif ai_provider_choice == 'c':
+        config["AI_PROVIDER"] = "gemini"
+    else:
+        config["AI_PROVIDER"] = "deepseek" # Default to DeepSeek
+
     # 分析类型
     if detail_need == 'a':
         config["ANALYSIS_TYPE"] = "quick"
@@ -148,33 +184,78 @@ def estimate_cost(config):
     }
     
     cost = papers * base_cost.get(analysis_type, 0.012)
-    return f"约 ¥{cost:.2f} / 次运行"
+    # Add a note about provider-specific costs if they differ significantly
+    # For now, this is a simple estimate.
+    provider_note = ""
+    if config.get("AI_PROVIDER") != "deepseek":
+        provider_note = " (注意: 此成本估算基于DeepSeek。OpenAI/Gemini成本可能不同，请参考其官方定价)"
+    return f"约 ¥{cost:.2f} / 次运行{provider_note}"
 
 def generate_reference_file(config):
     """生成GitHub Secrets参考文件"""
     
+    chosen_provider = config.get('AI_PROVIDER', 'deepseek')
+
     content = f"""# GitHub Secrets 配置参考
 根据配置助手生成的推荐配置
 
-## 🔑 必需配置（必须添加到GitHub Secrets）
+## 🔑 必需的核心API密钥和邮件配置
 
-### DeepSeek API配置
+请根据您在配置助手中选择的AI服务提供商，设置对应的API密钥。
+邮件配置用于接收分析报告。
+
+### AI 服务提供商 API 密钥 (选择一个配置)
+
+#### DeepSeek (若选择)
 ```
 DEEPSEEK_API_KEY=sk-your-deepseek-api-key
 ```
 获取地址：https://platform.deepseek.com/
 
-### 邮件配置
+#### OpenAI (若选择)
+```
+OPENAI_API_KEY=sk-your-openai-api-key
+```
+获取地址：https://platform.openai.com/api-keys
+
+#### Gemini (若选择)
+```
+GEMINI_API_KEY=your-gemini-api-key
+```
+获取地址：https://aistudio.google.com/app/apikey
+
+### 邮件配置 (必需)
 ```
 SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password  
+SMTP_PASSWORD=your-app-password  # 若是Gmail, 请使用App Password
 EMAIL_TO=recipient@gmail.com
 ```
 Gmail设置指南：docs/setup/GMAIL_SETUP_GUIDE.md
 
 ## ⚙️ 推荐的优化配置（可选）
 
-### 分析配置
+### AI服务提供商配置
+```
+AI_PROVIDER={chosen_provider}
+```
+根据您选择的提供商，可以调整对应的模型：
+
+#### DeepSeek 模型 (若使用DeepSeek)
+```
+DEEPSEEK_MODEL=deepseek-chat 
+```
+
+#### OpenAI 模型 (若使用OpenAI)
+```
+OPENAI_MODEL=gpt-3.5-turbo
+```
+
+#### Gemini 模型 (若使用Gemini)
+```
+GEMINI_MODEL=gemini-pro
+```
+
+### 分析流程配置
 ```
 ANALYSIS_TYPE={config['ANALYSIS_TYPE']}
 MAX_PAPERS={config['MAX_PAPERS']}
