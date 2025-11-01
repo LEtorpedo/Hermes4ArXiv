@@ -20,9 +20,12 @@
    SMTP_USERNAME=your-email@gmail.com      # 必需：发送邮箱
    SMTP_PASSWORD=your-app-password         # 必需：邮箱授权码
    EMAIL_TO=recipient@gmail.com            # 必需：接收邮箱(支持多人，用","隔开)
+   
+   # 🎛️ 可选：总开关控制（控制每日自动运行）
+   ENABLE_DAILY_RUN=true                   # 可选：设置为false可暂停每日运行，默认为true
    ```
 
-3. **启用Actions**：GitHub Actions 将每日北京时间8:00自动运行
+3. **启用Actions**：GitHub Actions 将每周一到周五北京时间7:00自动运行（周末自动跳过）
 
 就是这么简单！系统将每日自动分析最新的AI/ML/NLP论文并发送邮件报告。
 
@@ -58,17 +61,21 @@
 |-------|--------|------|
 | **分析领域** | `cs.AI,cs.LG,cs.CL` | AI、机器学习、自然语言处理 |
 | **论文数量** | `50篇` | 每次分析的论文数量 |
-| **搜索范围** | `最近5天` | 获取最新论文（避免周末无新论文） |
+| **搜索范围** | `今天发布` | 只查询当天论文，避免重复 |
 | **分析详细度** | `全面分析` | 400-600字，平衡详细度和可读性 |
-| **运行时间** | `每日8:00` | 北京时间，可手动触发 |
+| **运行时间** | `周一至五 7:00` | 北京时间，周末自动跳过，可手动触发 |
+| **总开关** | `ENABLE_DAILY_RUN` | 通过GitHub Secret控制，默认启用 |
 
 **需要调整这些配置？** 参见 [高级配置指南](ADVANCED_CONFIG.md)
 
 ## 🕒 使用方式
 
-- **自动运行**：每日北京时间 8:00（GitHub Actions自动触发）
+- **自动运行**：每周一至五北京时间 7:00（GitHub Actions自动触发，周末休息）
 - **手动运行**：Actions → Daily Paper Analysis → Run workflow  
+- **暂停运行**：Settings → Secrets → 设置 `ENABLE_DAILY_RUN=false`
 - **查看结果**：检查邮箱或仓库的运行日志
+
+📖 **详细开关使用指南**：参见 [SWITCH_GUIDE.md](SWITCH_GUIDE.md)
 
 ## 🔐 安全说明
 
@@ -98,6 +105,8 @@
 
 ## 📚 详细文档
 
+- [开关控制指南](SWITCH_GUIDE.md) - 如何暂停/启用每日运行，成本控制
+- [评分优化分析](SCORING_ANALYSIS.md) - 评分虚高问题分析与解决方案
 - [高级配置指南](ADVANCED_CONFIG.md) - 自定义分析类型、论文数量等
 - [Qwen API配置](docs/setup/QWEN_SETUP_GUIDE.md) - 通义千问API密钥申请和配置
 - [DeepSeek API配置](docs/setup/DEEPSEEK_SETUP_GUIDE.md) - API密钥申请和配置
